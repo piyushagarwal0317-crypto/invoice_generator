@@ -5,14 +5,15 @@ COPY pom.xml .
 COPY src ./src
 RUN mvn clean package -DskipTests
 
-# Delete the plain jar entirely so only the main executable is left
-RUN rm target/*-plain.jar || true
+# Find the real executable jar (ignoring the plain one) and rename it to a clean name
+RUN cp target/$(ls target | grep -v "plain" | grep ".jar") /app/final-app.jar
 
 # Stage 2: Run the application using Java 21
 FROM eclipse-temurin:21-jdk
 WORKDIR /app
 
-# Safely copy the one remaining correct jar file
-COPY --from=build /app/target/*.jar app.jar
+# Explicitly copy the exact file without any wildcards
+COPY --from=build /app/final-app.jar ./app.jar
+
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
